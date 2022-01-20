@@ -1,12 +1,12 @@
-function AddAccessRestrictionsToAppServices([string] $ResourceGroupName, 
+function Add-AccessRestrictionsToAppServices([string] $ResourceGroupName, 
   [string] $JsonFilename, 
   [bool] $RemoveExistingRules, 
   [string] $AppServicesToExclude)
 {
-  Write-Output "Reading the json file with ip rules"
+  Write-Information "Reading the json file with ip rules"
   $ipRules = ReadJsonFile($JsonFilename)
 
-  Write-Output "Retrieving all app services in $ResourceGroupName"
+  Write-Information "Retrieving all app services in $ResourceGroupName"
   $allAppServices = Get-AzWebApp -ResourceGroupName $ResourceGroupName
   Foreach ($appService in $allAppServices)
   {
@@ -14,17 +14,17 @@ function AddAccessRestrictionsToAppServices([string] $ResourceGroupName,
 
     if($AppServicesToExclude.ToLower().Contains($appServiceName.ToLower()))
     {
-      Write-Output "Skipped app service $appServiceName as it is in the exclude list"
+      Write-Information "Skipped app service $appServiceName as it is in the exclude list"
       continue
     }
 
     if ($RemoveExistingRules)
     {
       $config = Get-AzWebAppAccessRestrictionConfig -ResourceGroupName $ResourceGroupName -Name $appService.Name
-      Write-Output "Removing existing access restrictions on $appServiceName"
+      Write-Information "Removing existing access restrictions on $appServiceName"
       Foreach ($accessRestriction in $config.MainSiteAccessRestrictions)
       {
-        Write-Information "Removing rule $accessRestriction.RuleName"
+        Write-Debug "Removing rule $accessRestriction.RuleName"
         Remove-AzWebAppAccessRestrictionRule -ResourceGroupName $ResourceGroupName -WebAppName $appService.Name -Name $accessRestriction.RuleName
       }
     }
@@ -33,7 +33,7 @@ function AddAccessRestrictionsToAppServices([string] $ResourceGroupName,
     {
       $ruleName = $ipRule.rulename
       $ipAddress = $ipRule.ipaddress
-      Write-Output "Adding rule $ruleName to allow ip $ipAddress access to $appServiceName"
+      Write-Information "Adding rule $ruleName to allow ip $ipAddress access to $appServiceName"
     
       # Construct ip address filter for access restriction /32 = single ip address
       $ipAddress = -join($ipRule.ipaddress, "/32");
@@ -44,22 +44,34 @@ function AddAccessRestrictionsToAppServices([string] $ResourceGroupName,
   }
 }
 
-function RemoveAccessRestrictionsOnAppServices([string] $ResourceGroupName)
-{
-  Write-Output "Retrieving all app services in $ResourceGroupName"
+function Remove-AllAccessRestrictionsFromAppServices([string] $ResourceGroupName) {
+  Write-Information "Retrieving all app services in $ResourceGroupName"
   $allAppServices = Get-AzWebApp -ResourceGroupName $ResourceGroupName
-  Foreach ($appService in $allAppServices)
-  {
-    $appServiceName = $appService.Name
-    $config = Get-AzWebAppAccessRestrictionConfig -ResourceGroupName $ResourceGroupName -Name $appService.Name
-    Write-Output "Removing existing access restrictions on $appServiceName"
+  Foreach ($appService in $allAppServices) {
+      Remove-AccessRestrictionsFromAppService -ResourceGroupName $ResourceGroupName -Name $appService.Name
+  }
+}
 
-    Foreach ($accessRestriction in $config.MainSiteAccessRestrictions)
-    {
+function Remove-AccessRestrictionsFromAppService([string] $ResourceGroupName, [string] $Name) {
+  $config = Get-AzWebAppAccessRestrictionConfig -ResourceGroupName $ResourceGroupName -Name $Name
+  Write-Information "Removing existing access restrictions on $Name"
+  Foreach ($accessRestriction in $config.MainSiteAccessRestrictions) {
       $ruleName = $accessRestriction.RuleName
-      Write-Information "Removing rule $ruleName"
-      Remove-AzWebAppAccessRestrictionRule -ResourceGroupName $ResourceGroupName -WebAppName $appService.Name -Name $accessRestriction.RuleName
-    }
+      Write-Debug "Removing rule $ruleName"
+      Remove-AzWebAppAccessRestrictionRule -ResourceGroupName $ResourceGroupName -WebAppName $Name -Name $accessRestriction.RuleName
+  }
+
+  # Also remove all the access restriction from the staging slots
+  $allSlots = Get-AzWebAppSlot -ResourceGroupName $ResourceGroupName -Name $Name
+  Foreach ($slot in $allSlots) {
+      $slotName = Get-SlotName -SlotName $slot.Name -AppServiceName $Name
+      Write-Information "Removing existing access restrictions on $Name slot $slotName"
+      $config = Get-AzWebAppAccessRestrictionConfig -ResourceGroupName $ResourceGroupName -Name $Name -SlotName $slotName
+      Foreach ($accessRestriction in $config.MainSiteAccessRestrictions) {
+          $ruleName = $accessRestriction.RuleName
+          Write-Debug "Removing rule $ruleName"
+          Remove-AzWebAppAccessRestrictionRule -ResourceGroupName $ResourceGroupName -WebAppName $Name -Name $accessRestriction.RuleName -SlotName $slotName
+      }
   }
 }
 
@@ -83,5 +95,5 @@ function LoginToAzure()
 }
 
 Export-Modulemember -Function LoginToAzure
-Export-Modulemember -Function RemoveAccessRestrictionsOnAppServices
-Export-Modulemember -Function AddAccessRestrictionsToAppServices
+Export-Modulemember -Function Remove-AccessRestrictionsFromAppServices
+Export-Modulemember -Function Add-AccessRestrictionsToAppServices

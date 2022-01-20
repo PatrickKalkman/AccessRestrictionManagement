@@ -3,7 +3,8 @@
   Remove all access restrictions from the app services in the given resource group
 
   .DESCRIPTION
-  The Remove-AccessRestrictions.ps1 script removes all access restrictions from the app services in the given resource group
+  The Remove-AccessRestrictions.ps1 script removes all access restrictions from 
+  the app services in the given resource group
 
   .PARAMETER resourceGroupName
   The resource group with the app services to remove the access restrictions
@@ -27,5 +28,5 @@ Import-Module .\Manage-AccessRestrictions.psm1
 
 Write-Output "--> Starting remove all access restriction script"
 LoginToAzure
-RemoveAccessRestrictionsOnAppServices -ResourceGroupName $resourceGroupName
+Remove-AccessRestrictionsFromAppServices -ResourceGroupName $resourceGroupName
 Write-Output "<-- Finished remove all access restriction script"
