@@ -10,10 +10,10 @@ function Add-AccessRestrictionsToAppServices([string] $ResourceGroupName,
   if (!$confirmAppServicesToExclude)
   {
     $errorMessage = "Did not find one or more of the app services in the exclude list, make sure that the names are spelled correctly" 
-    Write-Output $errorMessage 
+    Write-Error $errorMessage 
     throw $errorMessage
   }
-  
+
   Write-Information "Reading the json file with ip rules"
   $ipRules = ReadJsonFile($JsonFilename)
 
@@ -25,7 +25,7 @@ function Add-AccessRestrictionsToAppServices([string] $ResourceGroupName,
     {
       if($appServiceToExclude.ToLower().Contains($appServiceName.ToLower()))
       {
-        Write-Output "Skipped app service $appServiceName as it is in the exclude list"
+        Write-Information "Skipped app service $appServiceName as it is in the exclude list"
         continue nextAppService
       }
     }
@@ -61,7 +61,7 @@ function Confirm-AppServicesToExclude([Object[]] $AllAppServices, [string[]] $Ap
   return $true
 }
 
-function Remove-AllAccessRestrictionsFromAppServices([string] $ResourceGroupName)
+function Remove-AccessRestrictionsFromAppServices([string] $ResourceGroupName)
 {
   Write-Information "Retrieving all app services in $ResourceGroupName"
   $allAppServices = Get-AzWebApp -ResourceGroupName $ResourceGroupName

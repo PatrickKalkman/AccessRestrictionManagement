@@ -28,5 +28,5 @@ Import-Module .\Manage-AccessRestrictions.psm1
 
 Write-Output "--> Starting remove all access restriction script"
 LoginToAzure
-Remove-AccessRestrictionsFromAppServices -ResourceGroupName $resourceGroupName
+Remove-AccessRestrictionsFromAppServices -ResourceGroupName $resourceGroupName -Verbose:$VerbosePreference
 Write-Output "<-- Finished remove all access restriction script"
