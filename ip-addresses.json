@@ -1,5 +1,5 @@
 [
-  { "rulename": "gateway", "ipaddress": "213.46.145.111" },
-  { "rulename": "vpn", "ipaddress": "210.46.145.111" },
-  { "rulename": "test", "ipaddress": "215.46.145.111" }
+  { "rulename": "gateway", "ipaddress": "213.46.145.111", "priority": "200" },
+  { "rulename": "vpn", "ipaddress": "210.46.145.111", "priority": "300" },
+  { "rulename": "test", "ipaddress": "215.46.145.111", "priority": "400" }
 ]
